@@ -52,7 +52,7 @@ def add_card_to_anki(card):
 
 
 def transform_markdown_to_html(text):
-    return markdown.markdown(text, extensions=['md_in_html'])
+    return markdown.markdown(text, extensions=['fenced_code', 'nl2br'])
 
 
 def search_and_add_cards(db, pattern):
