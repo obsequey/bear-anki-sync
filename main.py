@@ -32,12 +32,12 @@ def add_card_to_anki(card):
         "params": {
             "note": {
                 "deckName": default_deck,
-                "modelName":"Basic",
+                "modelName": "Basic",
                 "fields": card,
                 "options": {
                     "allowDuplicate": False,
                     "duplicateScope": "deck",
-                    "duplicateScopeOptions":{
+                    "duplicateScopeOptions": {
                         "deckName": default_deck,
                         "checkChildren": False,
                         "checkAllModels": False
