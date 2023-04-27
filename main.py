@@ -6,7 +6,7 @@ import requests
 BEAR_DB_PATH = "/Users/burna/Library/Group Containers/9K33E3U3T4.net.shinyfrog.bear/Application Data/database.sqlite"
 
 # Patterns
-multiline = re.compile('(.+)#flashcard\n((?:.+\n)+)')
+multiline = re.compile('(.+)#flashcard\n((?:.+\n?)+).*')
 oneline = re.compile('(.+)\s::\s(.+)\n')
 
 ANKI_CONNECT = 'http://localhost:8765'
