@@ -2,6 +2,8 @@
 
 This is yet another implementation of a script to sync notes to Anki. I created this script for my personal use, but plan to improve it over time. If you have any questions, please open an issue.
 
+The script creates flashcards under the tag `#bear`.
+
 ## How to use
 
 1. Copy this repo and open terminal from the folder
