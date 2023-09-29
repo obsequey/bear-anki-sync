@@ -12,6 +12,9 @@ multiline = re.compile('(.+)#flashcards\n((?:.+\n?)+).*')
 oneline = re.compile('(.+)\s::\s(.+)\n')
 
 ANKI_CONNECT = 'http://localhost:8765'
+DECK_NAME = 'Bear'
+TAG_NAME= 'Bear'
+MODEL_NAME = 'Bear'
 
 
 def find_cards_by_tag(tag):
@@ -51,6 +54,61 @@ def delete_cards_by_tag(tag):
         exit(1)
 
 
+def update_model_styles(name, style):
+    payload = json.dumps({
+        "action": "updateModelStyling",
+        "version": 6,
+        "params": {
+            "model": {
+                "name": name,
+                "css": style
+            }
+        }
+    })
+
+    try:
+        request = requests.post(ANKI_CONNECT, data=payload)
+        if request.json()['error']:
+            raise ValueError("Couldn't update the model in Anki. Error: %s" % request.json()['error'])
+    except requests.exceptions.RequestException:
+        print("ERROR: couldn't update the model \"%s\"" % name)
+        exit(1)
+
+
+def create_model(name):
+    card_style_file = open('styles.css', 'r')
+    card_style = card_style_file.read()
+
+    payload = json.dumps({
+        "action": "createModel",
+        "version": 6,
+        "params": {
+            "modelName": name,
+            "inOrderFields": ["Front", "Back"],
+            "css": card_style,
+            "cardTemplates": [
+                {
+                    "Front": "{{Front}}",
+                    "Back": "{{Back}}"
+                }
+            ]
+        }
+    })
+
+    card_style_file.close()
+
+    try:
+        request = requests.post(ANKI_CONNECT, data=payload)
+        if request.json()['error']:
+            raise ValueError(request.json()['error'])
+    except requests.exceptions.RequestException:
+        print("ERROR: couldn't create model \"%s\"" % name)
+        exit(1)
+    except ValueError as e:
+        if e.args[0] == 'Model name already exists':
+            update_model_styles(name, card_style)
+
+
 def create_deck(deck):
     print("DEBUG: creating deck \"" + deck + "\"")
     payload = json.dumps({
@@ -77,7 +135,7 @@ def update_card(card):
         "version": 6,
         "action": "findNotes",
         "params": {
-            "query": "deck:Bear \"front:%s\"" % card['Front']
+            "query": "deck:%s \"front:%s\"" % (DECK_NAME, card['Front'])
         }
     })
 
@@ -85,7 +143,7 @@ def update_card(card):
         request = requests.post(ANKI_CONNECT, data=payload)
         if request.json()['error']:
             raise ValueError("Couldn't find the note %s in Anki. Error: %s" % (card['Front'], request.json()['error']))
-        if len(request.json()['result']) is 0:
+        if len(request.json()['result']) == 0:
             raise ValueError("Didn't find any notes in Anki. Check the search query.")
     except requests.exceptions.RequestException:
         print("ERROR: couldn't find the note \"%s\"" % card['Front'])
@@ -116,15 +174,14 @@ def update_card(card):
         exit(1)
 
 
-def add_card_to_anki(card, deck):
-    anki_tag = 'bear'
+def create_card(card, deck):
     payload = {
         "action": "addNote",
         "version": 6,
         "params": {
             "note": {
                 "deckName": deck,
-                "modelName": "Basic",
+                "modelName": MODEL_NAME,
                 "fields": card,
                 "options": {
                     "allowDuplicate": False,
@@ -135,7 +192,7 @@ def add_card_to_anki(card, deck):
                         "checkAllModels": False
                     }
                 },
-                "tags": [anki_tag]
+                "tags": [TAG_NAME]
             }
         }
     }
@@ -159,13 +216,19 @@ def transform_markdown_to_html(text):
     text = text.replace("- ", "", 1)
     text = text.replace("* ", "", 1)
 
-    words = text.split()  # Split the string into words
-    # Remove the '~' character from the beginning and end of each word
-    cleaned_words = [word.strip('~') for word in words]
-    # Reconstruct the cleaned string
-    text = ' '.join(cleaned_words)
+    cleaned_lines = []
 
-    return markdown.markdown(text, extensions=['fenced_code', 'nl2br'])
+    for line in text.split('\n'):
+        if line == '':
+            continue
+        cleaned_words = []
+        for word in line.split():
+            cleaned_words.append(word.strip('~'))
+        cleaned_lines.append(' '.join(cleaned_words))
+
+    cleaned_text = '\n'.join(cleaned_lines)
+
+    return markdown.markdown(cleaned_text, extensions=['codehilite', 'fenced_code', 'nl2br'])
 
 
 def get_deck_value(text):
@@ -192,17 +255,22 @@ def get_deck_value(text):
 
 def search_and_add_cards(db, pattern):
     for (text, title) in db.execute("select ZTEXT, ZTITLE from ZSFNOTE where ZTRASHED=0 and ZARCHIVED=0"):
+
         if not text:
             print("WARN : empty text")
             continue
+
         for (question, answer) in pattern.findall(text):
             print("DEBUG: processed \"" + title + "\" note")
             print("DEBUG: question is \"" + question + "\"")
             print("DEBUG: answer is \"" + answer + "\"")
+
             card = {'Front': transform_markdown_to_html(question), 'Back': transform_markdown_to_html(answer)}
-            deck = "Bear::%s" % get_deck_value(text)
+            deck = "%s::%s" % (DECK_NAME, get_deck_value(text))
+
             create_deck(deck)
-            add_card_to_anki(card, deck)
+
+            create_card(card, deck)
 
 
 def main():
@@ -221,7 +289,8 @@ def main():
     shutil.copy(BEAR_DB_PATH, BEAR_DB_COPY_DIR)
 
     db = sqlite3.connect(BEAR_DB_COPY_PATH)
-    create_deck("Bear")
+    create_deck(DECK_NAME)
+    create_model(MODEL_NAME)
     search_and_add_cards(db, multiline)
     search_and_add_cards(db, oneline)
 
