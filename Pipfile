@@ -5,10 +5,13 @@ name = "pypi"
 
 [scripts]
 sync = "python main.py"
+test = "python -m unittest discover tests"
 
 [packages]
 requests = "*"
 markdown = "*"
+pyyaml = "*"
+ipdb = "*"
 
 [dev-packages]
 
