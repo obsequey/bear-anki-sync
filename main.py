@@ -8,7 +8,7 @@ import requests
 import yaml
 
 # Patterns
-multiline = re.compile('(.+)#flashcard\n((?:.+\n?)+).*')
+multiline = re.compile('(.+)#flashcards\n((?:.+\n?)+).*')
 oneline = re.compile('(.+)\s::\s(.+)\n')
 
 ANKI_CONNECT = 'http://localhost:8765'
