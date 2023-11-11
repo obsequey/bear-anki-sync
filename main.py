@@ -273,7 +273,7 @@ def search_and_add_cards(db, pattern):
 def main():
     BEAR_DB_PATH = "/Users/burna/Library/Group Containers/9K33E3U3T4.net.shinyfrog.bear/Application Data/database.sqlite"
     # Copy sqlite db to avoid locking the Bear app
-    BEAR_DB_COPY_DIR = "/Users/burna/.bear-anki-sync/"
+    BEAR_DB_COPY_DIR = ".bear-anki-sync/"
 
     if os.path.exists(BEAR_DB_COPY_DIR):
         print("DEBUG: folder %s already exists" % BEAR_DB_COPY_DIR)
